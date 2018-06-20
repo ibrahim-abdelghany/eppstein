@@ -8,7 +8,7 @@ g.createVertices("S,A,B,C,T")
 
 g.createEdges("S", "A", 2)
 g.createEdges("A","B", 1)
-g.createEdges("A,B","C",4)
+g.createEdges("A,B","C,B",4)
 g.createEdges("A","T",10)
 g.createEdges("C","T",5)
 
@@ -39,10 +39,8 @@ g.createEdges("G",   "T",   7)
 #g.createEdges("C", "C", 16, "beta")  
 
 p = g.findShortestPath("S","T")
-
 while p.isValid():
-	print(p.getVertexNames() + "( " + p.getWeight() + ")")
-	p = g.FindNextShortestPath()
+	p = g.findNextShortestPath()
 else:
     print("Not valid all")
 

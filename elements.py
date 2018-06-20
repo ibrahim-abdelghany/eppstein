@@ -12,7 +12,7 @@ class Vertex:
         if self.edge2path is None:
             return None
         else:
-            return edge2path.head
+            return self.edge2path.head
 
     def __str__(self):
         return self.label
@@ -30,9 +30,9 @@ class Vertex:
 
     def getWeight(self):
         if self.sortType == 0:
-            return self.time
+            return self.distance
         elif self.sortType == 1:
-            return self.price
+            return self.distance
 
 class Edge:
     def __init__(self):
@@ -73,19 +73,19 @@ class Edge:
         return self.getWeight() + self.head.getWeight() - self.tail.getWeight()
 
     def isSidetrackOf(self, v):
-        return self.tail == v and self != v.edge2path and self.weight >= 0
+        return self.tail == v and self != v.edge2path and self.getWeight() >= 0
 
     def getWeight(self):
         if self.sortType == 0:
-            return self.time
+            return self.weight
         elif self.sortType == 1:
-            return self.price
+            return self.weight
 
-    def getSubWeight(self, sortType):
-        if sortType == 0:
-            return self.price
-        elif sortType == 1:
-            return self.time
+    def getSubWeight(self):
+        if self.sortType == 0:
+            return self.weight
+        elif self.sortType == 1:
+            return self.weight
 
 class Path(list):
     def __init__(self):
@@ -95,18 +95,22 @@ class Path(list):
         return len(self) > 0
 
     def getVertexNames(self):
-        if not isValid():
+        if not self.isValid():
             return "(Empty)"
 
         strList = []
-        strList.append(self[0].tail)
+        strList.append(str(self[0].tail))
 
         for e in self:
             strList.append(",")
-            strList.append(e.head)
+            strList.append(str(e.head))
 
         return ''.join(strList)
 
+    def addRange(self, pathList):
+        for p in pathList:
+            heappush(self,p)
+    
     def getWeight(self):
         total = 0
         for e in self:
@@ -122,12 +126,12 @@ class Path(list):
         return total
 
     def __str__(self):
-        if not isValid():
+        if not self.isValid():
             return "(Empty)"
 
         strList = []
         for e in self:
-            strList.append(e.delta())
+            strList.append(str(e.delta()))
             strList.append(',')
 
         if len(strList) > 0:
@@ -141,7 +145,7 @@ class SPNode:
         self.weight = 0
 
     def __str__(self):
-        return "["+self.weight+"]"
+        return "["+str(self.weight)+"]"
 
     def __repr__(self):
         return self.edge.__str__()
@@ -166,8 +170,8 @@ class SPNode:
         return 0
 
 class STNode:
-    def __init__(self):
-        self.sidetracks = Path()
+    def __init__(self,path):
+        self.sidetracks = path
         self.weight = 0
 
     def __str__(self):
@@ -186,6 +190,12 @@ class STNode:
 
     def __ne__(self,other):
         return not self.__eq__(other)
+
+    def getWeight(self):
+        return self.weight
+
+    def getSubWeight(self):
+        return self.weight
 
 class Graph:
     def __init__(self):
@@ -272,12 +282,10 @@ class Graph:
         if not self.ready:
             return Path()
 
-        node = heappop(self.pathHeap)
-
-        if node is None:
+        if len(self.pathHeap) > 0:
+            node = heappop(self.pathHeap)
+        else:
             return Path()
-
-        print(node)
 
         return self.rebuildPath(node.sidetracks)
 
@@ -291,60 +299,58 @@ class Graph:
 
         v = self.dest
         v.distance = 0
-
         fringe = []
 
         while True:
-            if v is not None:
+            if v is not None: 
                 for e in v.relatedEdges:
                     if e.head ==v and e.weight >= 0:
                         _n = SPNode()
                         _n.edge = e
                         _n.weight = e.weight + e.head.distance
                         heappush(fringe,_n)
-           
-            print(len(fringe))
-            try:
+          
+            if len(fringe) > 0:
                 node = heappop(fringe)
-                print(node)
-            except IndexError as ie:
-                print(ie)
-            finally:
+            else:
                 break
 
             e = node.edge;
             v = e.tail
-            print(v)
+
             if v.distance == -1:
                 v.distance = e.weight + e.head.distance
                 v.edge2path = e
-                print(v)
-                print(v.edge2path)
+
             else:
                 v = None
     
     def buildSidetracksHeap(self):
         self.pathHeap = []
         empty = Path()
-        stNode = STNode()
-        stNode.pathHeap = empty
-        heappush(self.pathHeap,stNode)
+        heappush(self.pathHeap,STNode(empty))
 
         self.addSidetracks(empty, self.origin)
+        for stnode in self.pathHeap:
+            for st in stnode.sidetracks:
+                print(st)
 
     def addSidetracks(self, _p, _v):
         for e in _v.relatedEdges:
+            print("addSidetracks")
+            print(_v)
+            print(e)
             if e.isSidetrackOf(_v) and (e.head.edge2path is not None or e.head == self.dest):
                 p = Path()
                 p.addRange(_p)
                 heappush(p,e)
-                heappush(self.pathHeapST_Node(p))
+                heappush(self.pathHeap,STNode(p))
 
                 if e.head != _v:
-                    addSidetracks(p, e.head)
+                    self.addSidetracks(p, e.head)
         
         if _v.nextVertex() != None:
-            addSidetracks(_p, _v.nextVertex())
+            self.addSidetracks(_p, _v.nextVertex())
 
     def rebuildPath(self, _sidetracks):
         path = Path()
