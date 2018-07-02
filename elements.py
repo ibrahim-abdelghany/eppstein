@@ -139,6 +139,9 @@ class Path(list):
 
         return ''.join(strList)
 
+    def __repr__(self):
+        return __str__()
+
 class SPNode:
     def __init__(self):
         self.edge = Edge()
@@ -331,15 +334,9 @@ class Graph:
         heappush(self.pathHeap,STNode(empty))
 
         self.addSidetracks(empty, self.origin)
-        for stnode in self.pathHeap:
-            for st in stnode.sidetracks:
-                print(st)
 
     def addSidetracks(self, _p, _v):
         for e in _v.relatedEdges:
-            print("addSidetracks")
-            print(_v)
-            print(e)
             if e.isSidetrackOf(_v) and (e.head.edge2path is not None or e.head == self.dest):
                 p = Path()
                 p.addRange(_p)

@@ -39,8 +39,10 @@ g.createEdges("G",   "T",   7)
 #g.createEdges("C", "C", 16, "beta")  
 
 p = g.findShortestPath("S","T")
+print(p)
 while p.isValid():
 	p = g.findNextShortestPath()
+    print(p)
 else:
     print("Not valid all")
 
