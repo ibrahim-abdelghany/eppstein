@@ -63,8 +63,7 @@ def ksp(graph, sourceLabel, targetLabel, K):
     outrootHeaps = {}
     
     #   COMPUTE EPPSTEIN HEAP, Part 1: Compute sub-heap H_out(v) for each node v.
-    #         -- H_out(v) is a heap of all of the outgoing sidetrack edges of v. */
-    
+    #         -- H_out(v) is a heap of all of the outgoing sidetrack edges of v. 
     for nodeLabel in graph.nodes.keys():
         computeOutHeap(nodeLabel, graph, sideTrackEdgeCostMap, nodeHeaps, edgeHeaps)
         # /* COMPUTE EPPSTEIN HEAP, Part 2: Compute sub-heap H_T(v) for each node v.
@@ -110,8 +109,8 @@ def ksp(graph, sourceLabel, targetLabel, K):
             #     1) Some shorter path, p, from s (source) to t (target)
             #     2) A sidetrack edge which branches off of path p at node u, and points to node v
             #     3) The shortest path in the shortest path tree from node v to t 
-        print("PathPQ")
-        print(pathPQ)
+        # print("PathPQ")
+        # print(pathPQ)
         kpathImplicit = heappop(pathPQ)
        
         #  Convert from the implicit path representation to the explicit path representation
@@ -152,6 +151,8 @@ def computeSidetrackEdgeCosts(graph, tree):
         tp = tree.getParentOf(e.fromNode)
         if tp == None or not tp == e.toNode:
             sidetrackEdgeCost = e.weight + tree.nodes[e.toNode].dist - tree.nodes[e.fromNode].dist
+            if len(tree.nodes[e.fromNode].lines & e.availableLines) < 1:
+                sidetrackEdgeCost += 3
             hashStr = e.fromNode+","+e.toNode
             sideTrackEdgeCostMap[hashStr] = sidetrackEdgeCost 
     
@@ -227,9 +228,9 @@ def computeOutHeap(nodeLabel, graph, sidetrackEdgeCostMap, nodeHeaps, edgeHeaps)
     #  */
 def addExplicitChildrenToQueue(kpathImplicit, ksp, pathPQ):
     kpathCost = kpathImplicit.cost;
-    print("[addExplicitChildren method]")
-    print("kpathImplicit.heap.children")
-    print(kpathImplicit.heap.children)
+    # print("[addExplicitChildren method]")
+    # print("kpathImplicit.heap.children")
+    # print(kpathImplicit.heap.children)
     for childHeap in kpathImplicit.heap.children:
         # // Get the index of the previous shorter path off of which this candidate sidetracks/branches
         prefPath = kpathImplicit.prefPath
@@ -239,8 +240,8 @@ def addExplicitChildrenToQueue(kpathImplicit, ksp, pathPQ):
 
         # // Add the child/candidate to the priority queue
         candidate = EppsteinPath(heap=childHeap, prefPath=prefPath, cost=candidateCost)
-        print("Candidate")
-        print(candidate)
+        # print("Candidate")
+        # print(candidate)
         heappush(pathPQ,candidate)
         
     # /**
@@ -252,23 +253,23 @@ def addExplicitChildrenToQueue(kpathImplicit, ksp, pathPQ):
     #  * @param pathPQ            priority queue of candidate paths
     #  */
 def addCrossEdgeChildToQueue(outrootHeaps, kpathImplicit, prefPath, ksp, pathPQ):
-    print("addCrossEdgeChildToQueue")
-    print("kpathImplicit.heap.sidetrack.toNode")
-    print(kpathImplicit.heap.sidetrack.toNode)
-    print(outrootHeaps)
+    # print("addCrossEdgeChildToQueue")
+    # print("kpathImplicit.heap.sidetrack.toNode")
+    # print(kpathImplicit.heap.sidetrack.toNode)
+    # print(outrootHeaps)
     if kpathImplicit.heap.sidetrack.toNode in outrootHeaps.keys():
         childHeap = outrootHeaps[kpathImplicit.heap.sidetrack.toNode]
 
         # // Calculate the path cost of the new child/candidate
         candidateCost = ksp[prefPath].totalCost + childHeap.sidetrackCost
         
-        print("ChildHeap")
-        print(childHeap)
+        # print("ChildHeap")
+        # print(childHeap)
 
         # // Add the child/candidate to the priority queue
         candidate = EppsteinPath(heap=childHeap, prefPath=prefPath, cost=candidateCost);
-        print("Candidate")
-        print(candidate)
+        # print("Candidate")
+        # print(candidate)
         heappush(pathPQ,candidate)
         
     # /**
@@ -312,22 +313,22 @@ def recursiveOutrootHeaps(nodeLabel, currentArrayHeap, nodeHeaps, outrootHeaps, 
         # // nodes that fall on the path where the new edge is added in the heap, to the root of the heap
         
         currentArrayHeap.addOutRoot(sidetrackHeap)
-        print("currentArrayHeap.arrayHeap");
-        print(currentArrayHeap.arrayHeap)
+        # print("currentArrayHeap.arrayHeap");
+        # print(currentArrayHeap.arrayHeap)
     
 
     # // Convert from an array representation of the heap (EppsteinArrayHeap), which is convenient for accessing and
     # // manipulating a binary heap, to a pointer representation (EppsteinHeap), which is consistent with the overall
     # // heap, which is not strictly a binary heap since some nodes can have up to 4 children.
     currentHeap = currentArrayHeap.toEppsteinHeap2()
-    print("CurrentHeap")
-    print(currentHeap)
+    # print("CurrentHeap")
+    # print(currentHeap)
 
     # // If v has any children (so H_T(v) exists), index heap H_T(v) in a list of heaps for fast access later
     if currentHeap is not None:
         outrootHeaps[nodeLabel] = currentHeap
     
-    print(reversedSPT.getNode(nodeLabel).neighbors.keys())
+    # print(reversedSPT.getNode(nodeLabel).neighbors.keys())
 
     # // Continue the depth-first search (recursively initiating additional depth-first searches for each child)
     for neighbor in reversedSPT.getNode(nodeLabel).neighbors.keys():
@@ -394,11 +395,11 @@ class EppsteinArrayHeap:
             current = parent
         
         heappush(self.arrayHeap, heap)
-        print("arrayHeap")
-        print("------")
-        for h in self.arrayHeap:
-            print(h)
-        print("------")
+        # print("arrayHeap")
+        # print("------")
+        # for h in self.arrayHeap:
+        #     print(h)
+        # print("------")
     
     def toEppsteinHeap(self):
         heapSize = len(self.arrayHeap)
@@ -481,7 +482,7 @@ class EppsteinPath:
     // 2) the sidetrack edge (u,v)
     // 3) the shortest path (in the shortest path tree) from node v to node t (target)
     '''
-    def explicitPath(self, ksp, tree):
+    def explicitPath(self, graph, ksp, tree):
         explicitPath = Path()
         heap = self.heap
         
@@ -489,6 +490,8 @@ class EppsteinPath:
         if self.prefPath >= 0:
             # // Get the explicit representation of the shorter parent path that this path sidetracks from
             explicitPrefPath = ksp[self.prefPath]
+            
+            print(explicitPrefPath)
             
             # // 1a) Identify the s-u portion of the path
             # // Identify and add the segment of the parent path up until the point where the current path sidetracks off
@@ -510,7 +513,7 @@ class EppsteinPath:
             # // Copy the explicit parent path up to the identified point where the current/child path sidetracks
             explicitPath = Path()
             for i in range(0,lastEdgeNum+1):
-                explicitPat.add(edges[i])
+                explicitPath.add(edges[i])
             
             # // 2) Add the (u,v) portion of the path
             # // Add the last sidetrack edge to the explicit path representation
@@ -519,6 +522,7 @@ class EppsteinPath:
         # // Add the shortest path from v (either the source node, or the incoming node of the sidetrack edge associated
         # // with the current path) to the explicit path representation
         current = heap.sidetrack.toNode
+        
         while not current == tree.root:
             nextN = tree.getParentOf(current)
             edgeWeight = tree.nodes[current].dist - tree.nodes[nextN].dist
@@ -542,19 +546,40 @@ class EppsteinPath:
     def __repr__(self):
         return 'heap : ' + str(self.heap) + ", prefPath : " + str(self.prefPath) +'cost : ' + str(self.cost)
 
-graph = Graph()
-
-K = 2
-graph.getDataFromFile('tiny_graph_01.1.txt')
-print("Reading data from file is complete")
-print("Computing %d shortest paths from data")
-
-sourceNode = "0"
-targetNode = "3"
-
-kspList = ksp(graph, sourceNode, targetNode, K)
-
-n = 1
-for p in kspList:
-    print("%d) %s" % (n,p))
-    n+=1
+def testSimpleData():
+    graph = Graph()
+    
+    K = 2
+    graph.getDataFromFile('tiny_graph_01.1.txt')
+    print("Reading data from file is complete")
+    print("Computing %d shortest paths from data")
+    
+    sourceNode = "0"
+    targetNode = "3"
+    
+    kspList = ksp(graph, sourceNode, targetNode, K)
+    
+    n = 1
+    for p in kspList:
+        print("%d) %s" % (n,p))
+        n+=1
+        
+def testBusData():
+    graph = Graph()
+    
+    sourceNode = "105013";
+    targetNode = "109157";
+    K = 20;
+    
+    graph.getDataFromBusFile('bus.csv')
+    print("Reading data from file is complete")
+    print("Computing %d shortest paths from data" %(K))
+    
+    kspList = ksp(graph, sourceNode, targetNode, K)
+    
+    n = 1
+    for p in kspList:
+        print("%d) %s" % (n,p))
+        n+=1
+if __name__ == "__main__":
+    testBusData()

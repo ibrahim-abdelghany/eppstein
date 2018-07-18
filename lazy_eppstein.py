@@ -1,10 +1,10 @@
 from eppstein import *
 from dijsktra import *
 from components import *
+import timeit
 
 def ksp(graph, sourceLabel, targetLabel, K):
     tree = shortestPathTree(graph.transpose(), targetLabel)
-    
     sidetrackEdgeCostMap = computeSidetrackEdgeCosts(graph, tree)
     # Make indexes to give fast access to these heaps later */
     # Heap H_out(v) for every node v
@@ -30,12 +30,12 @@ def ksp(graph, sourceLabel, targetLabel, K):
             #     1) Some shorter path, p, from s (source) to t (target)
             #     2) A sidetrack edge which branches off of path p at node u, and points to node v
             #     3) The shortest path in the shortest path tree from node v to t 
-        print("PathPQ")
-        print(pathPQ)
+        # print("PathPQ")
+        # print(pathPQ)
         kpathImplicit = heappop(pathPQ)
        
         #  Convert from the implicit path representation to the explicit path representation
-        kpath = kpathImplicit.explicitPath(ksp, tree);
+        kpath = kpathImplicit.explicitPath(graph, ksp, tree);
 
         #  Add explicit path to the list of K shortest paths
         ksp.append(kpath);
@@ -81,20 +81,49 @@ def buildHeap(nodeLabel, graph, sidetrackEdgeCostMap, nodeHeaps, edgeHeaps, outr
     currentHeap = currentArrayHeap.toEppsteinHeap2()
     if not(currentHeap is None):
         outrootHeaps[nodeLabel] = currentHeap
+        
+def testSimpleData():
+    graph = Graph()
     
-graph = Graph()
+    K = 2
+    graph.getDataFromFile('tiny_graph_01.1.txt')
+    print("Reading data from file is complete")
+    print("Computing %d shortest paths from data")
+    
+    sourceNode = "0"
+    targetNode = "3"
+    
+    kspList = ksp(graph, sourceNode, targetNode, K)
+    
+    n = 1
+    for p in kspList:
+        print("%d) %s" % (n,p))
+        n+=1
+        
+def testBusData():
+    graph = Graph()
+    
+    sourceNode = "105013";
+    targetNode = "106410";
+    K = 2;
+    
+    graph.getDataFromBusFile('bus.csv')
+    
+    print("Reading data from file is complete")
+    print("Computing %d shortest paths from data" %(K))
+    
+    start = timeit.default_timer()
+    
+    kspList = ksp(graph, sourceNode, targetNode, K)
+    
+    stop = timeit.default_timer()
+    
+    n = 1
+    for p in kspList:
+        print("%d) %s" % (n,p))
+        n+=1
+        
+    print("Elapsed time : %f" %(stop - start))
 
-K = 2
-graph.getDataFromFile('tiny_graph_01.1.txt')
-print("Reading data from file is complete")
-print("Computing %d shortest paths from data")
-
-sourceNode = "0"
-targetNode = "3"
-
-kspList = ksp(graph, sourceNode, targetNode, K)
-
-n = 1
-for p in kspList:
-    print("%d) %s" % (n,p))
-    n+=1
+if __name__ == "__main__":
+    testBusData()

@@ -3,6 +3,7 @@ class Edge:
         self.fromNode = ''
         self.toNode = ''
         self.weight = 0
+        self.availableLines = set([])
         for key, value in kargs.items():
             if key == 'fromNode':
                 self.fromNode = value
@@ -10,6 +11,8 @@ class Edge:
                 self.toNode = value
             elif key == 'weight':
                 self.weight = float(value)
+            elif key == 'availableLines':
+                self.availableLines = value
         # if len(args) > 0:
         #     self.weight = args[0]
         # else:
@@ -40,10 +43,19 @@ class Node:
     def __init__(self):
         self.label = ''
         self.neighbors = {}
+        self.neighborsAvailableLines = {}
     
 # replace weight with real Node object which is finded in Graph Edges
-    def addEdge(self, toNodeLabel, weight):
+    def addEdge(self, toNodeLabel, weight, availableLine=None):
         self.neighbors[toNodeLabel] = float(weight)
+        if not(availableLine is None):
+            try:
+                self.neighborsAvailableLines[toNodeLabel]
+            except KeyError as ke:
+                self.neighborsAvailableLines[toNodeLabel] = set([])
+            finally:
+                self.neighborsAvailableLines[toNodeLabel].add(availableLine)
+            
     
     def removeEdge(self, label):
         if label in self.neighbors.keys():
@@ -56,6 +68,16 @@ class Node:
 
     def getAdjacencyList(self):
         return self.neighbors.keys()
+        
+    def getAvailableLineList(self):
+        fullLineList = []
+        for key, lineList in self.neighborsAvailableLines.items():
+            fullLineList += lineList
+        
+        return fullLineList
+    
+    def getAvailableLineSet(self):
+        return set(self.getAvailableLineList())
 
     def getEdges(self):
         edges = []
@@ -64,6 +86,7 @@ class Node:
             e.fromNode = self.label
             e.toNode = s
             e.weight = self.neighbors[s]
+            e.availableLines = self.neighborsAvailableLines[s]
             edges.append(e)
 
         return edges
@@ -77,8 +100,13 @@ class Node:
         for adjNode in adjacencyList:
             neighborLabel = adjNode
             stringList.append(neighborLabel)
-            stringList.append(": ")
+            stringList.append(":")
             stringList.append(str(self.neighbors[adjNode]))
+            stringList.append("( ")
+            for lineNo in self.neighborsAvailableLines[neighborLabel]:
+                stringList.append(lineNo)
+                stringList.append(",")
+            stringList.append(" )")
             stringList.append(',')
 
         stringList.append("}")
@@ -118,25 +146,50 @@ class Graph:
                 self.addEdge(fromNode=edgeDescription[0],toNode=edgeDescription[1],weight=edgeDescription[2])
             
         f.close()
-     
+    
+    def getDataFromBusFile(self, fileName):
+        f = open(fileName, 'r')
+        prev = None
+        while True:
+            line = f.readline()
+            if not line: break
+            if prev is None:
+                prev = line.split(",")
+                continue
+            else:
+                current = line.split(",")
+                lineNo = prev[0];
+                if prev[0] != current[0]:
+                    prev = current
+                    continue
+                self.addEdge(fromNode=prev[2],toNode=current[2],weight=float(current[6]),lineNo=prev[0]);
+                prev = current
+                
     def addEdge(self, **kargs):
-        if len(kargs) == 3:
+        if len(kargs) == 4:
             fromNode = kargs['fromNode']
             toNode = kargs['toNode']
             weight = kargs['weight']
+            lineNo = kargs['lineNo']
             
             if fromNode not in self.nodes.keys():
                 self.addNode(fromNode)
             if toNode not in self.nodes.keys():
                 self.addNode(toNode)
-            self.nodes[fromNode].addEdge(toNode,weight)
+            self.nodes[fromNode].addEdge(toNode,weight,availableLine=lineNo)
             
         for key, value in kargs.items():
             if key == 'edge':
                 self.addEdge(fromNode=value.fromNode, toNode=value.toNode, weight=value.weight)
+                self.addAvailableLines(value.fromNode, value.toNode, value.availableLines)
             if key == 'edges':
                 for e in value:
                     self.addEdge(edge=e)
+    
+    def addAvailableLines(self, fromNode, toNode, availableLines):
+        if availableLines is None:
+            availableLines = []
+        self.nodes[fromNode].neighborsAvailableLines[toNode] = availableLines
                     
     def transpose(self):
         newNodes = {}
@@ -152,6 +205,7 @@ class Graph:
             neighbors = node.neighbors
             for adj in adjacencyList:
                 newNodes[adj].addEdge(key,neighbors[adj])
+                newNodes[adj].neighborsAvailableLines[key] = self.nodes[key].neighborsAvailableLines[adj]
         
         g = Graph()
         g.nodes = newNodes

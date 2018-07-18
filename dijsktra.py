@@ -4,6 +4,9 @@ from components import *
 class DijsktraNode(Node):
     def __init__(self, **kwargs):
         super().__init__()
+        self.dist = float("inf")
+        self.depth = 99999
+        self.lines = set([])
         for key, value in kwargs.items():
             if key == 'dist':
                 self.dist = float(value)
@@ -14,9 +17,8 @@ class DijsktraNode(Node):
             elif key == 'parent':
                 self.setParent(value)
                 super().addEdge(value,0.0)
-        else:
-            self.dist = float("inf")
-            self.depth = 99999
+            elif key == 'lines':
+                self.lines = value
     
     def setParent(self, parent):
         self.neighbors = {}
@@ -59,10 +61,13 @@ class Path:
                 for e in edges:
                     totalCost += e.weight
                 self.totalCost = totalCost
+            elif key == 'lines':
+                self.linesArr = value
         
         else:
             self.edges = []
             self.totalCost = 0
+            self.linesArr = []
             
     
     def getPathNodes(self):
@@ -106,6 +111,10 @@ class Path:
         if numEdges > 0:
             for i in range(numEdges):
                 sb.append(self.edges[i].fromNode)
+                sb.append("{")
+                for al in self.edges[i].availableLines:
+                    sb.append(al)
+                sb.append("}")
                 sb.append("-")
         
             sb.append(self.edges[numEdges-1].toNode)
@@ -156,6 +165,7 @@ def shortestPathTree(graph, sourceLabel):
     sourceNode = predecessorTree.nodes[predecessorTree.root]
     sourceNode.dist = 0
     sourceNode.depth = 0
+    sourceNode.lines = graph.nodes[predecessorTree.root].getAvailableLineSet()
     heappush(pq, sourceNode)
 
     count = 0
@@ -171,6 +181,17 @@ def shortestPathTree(graph, sourceLabel):
             neighborNode = predecessorTree.nodes[curNeighborLabel]
             curDistance = neighborNode.dist
             newDistance = current.dist + nodes[curLabel].neighbors[curNeighborLabel]
+            # check Line
+           
+            # print("curLabel : " + curLabel)
+            # print(graph.nodes[curLabel].getAdjacencyList())
+            # print(graph.nodes[curLabel].neighborsAvailableLines)
+            lineListCurNeighbor = graph.nodes[curLabel].neighborsAvailableLines[curNeighborLabel]
+            lineListAvailable = predecessorTree.nodes[curLabel].lines.intersection(lineListCurNeighbor)
+            if len(lineListAvailable) == 0:
+                newDistance += 3
+                lineListAvailable = lineListCurNeighbor
+            
             #print("curDis : %f, newDis : %f" % (curDistance, newDistance))
             if newDistance < curDistance:
                 neighbor = predecessorTree.nodes[curNeighborLabel]
@@ -179,8 +200,10 @@ def shortestPathTree(graph, sourceLabel):
                 neighbor.depth = current.depth + 1
                 neighbor.dist = newDistance
                 neighbor.setParent(curLabel)
+                neighbor.lines = lineListAvailable
                 pq.append(neighbor)
                 heapify(pq)
+                
     
     return predecessorTree
     
