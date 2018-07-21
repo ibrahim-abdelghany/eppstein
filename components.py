@@ -4,6 +4,7 @@ class Edge:
         self.toNode = ''
         self.weight = 0
         self.availableLines = set([])
+        
         for key, value in kargs.items():
             if key == 'fromNode':
                 self.fromNode = value

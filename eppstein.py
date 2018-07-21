@@ -151,8 +151,8 @@ def computeSidetrackEdgeCosts(graph, tree):
         tp = tree.getParentOf(e.fromNode)
         if tp == None or not tp == e.toNode:
             sidetrackEdgeCost = e.weight + tree.nodes[e.toNode].dist - tree.nodes[e.fromNode].dist
-            if len(tree.nodes[e.fromNode].lines & e.availableLines) < 1:
-                sidetrackEdgeCost += 3
+            # if len(tree.nodes[e.fromNode].lines & e.availableLines) < 1:
+            #     sidetrackEdgeCost += 3
             hashStr = e.fromNode+","+e.toNode
             sideTrackEdgeCostMap[hashStr] = sidetrackEdgeCost 
     
@@ -235,6 +235,8 @@ def addExplicitChildrenToQueue(kpathImplicit, ksp, pathPQ):
         # // Get the index of the previous shorter path off of which this candidate sidetracks/branches
         prefPath = kpathImplicit.prefPath
 
+        print("prefPath : " + str(prefPath))
+        print(len(ksp))
         # // Calculate the path cost of the new child/candidate
         candidateCost = ksp[prefPath].totalCost + childHeap.sidetrackCost
 
@@ -491,7 +493,7 @@ class EppsteinPath:
             # // Get the explicit representation of the shorter parent path that this path sidetracks from
             explicitPrefPath = ksp[self.prefPath]
             
-            print(explicitPrefPath)
+            # print(explicitPrefPath)
             
             # // 1a) Identify the s-u portion of the path
             # // Identify and add the segment of the parent path up until the point where the current path sidetracks off
@@ -528,6 +530,8 @@ class EppsteinPath:
             edgeWeight = tree.nodes[current].dist - tree.nodes[nextN].dist
             explicitPath.add(Edge(fromNode=current,toNode=nextN,weight=edgeWeight))
             current = nextN
+        
+        # explicitPath.setAttrDic(tree)
         
         return explicitPath
         

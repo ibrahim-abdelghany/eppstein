@@ -3,6 +3,55 @@ from dijsktra import *
 from components import *
 import timeit
 
+def checkLoop(ksp):
+    sb = []
+    
+    numEdges = len(ksp.edges)
+    if numEdges > 0:
+        for i in range(numEdges):
+            if ksp.edges[i].fromNode in sb:
+                return False
+            else:
+                sb.append(ksp.edges[i].fromNode)
+    
+        if ksp.edges[numEdges-1].toNode in sb:
+            return False
+    
+    return True
+
+def checkLineTransfer(graph,tree,kpath):
+    extraDistForTransfer = 0
+    lineDic = {}
+    numTransfer = 0
+    isAvailable = True
+    
+    lineDic[kpath.edges[0].fromNode] = graph.nodes[kpath.edges[0].fromNode].neighborsAvailableLines[kpath.edges[0].toNode]
+    
+    for i in range(len(kpath.edges)-1):
+        cur = kpath.edges[i]
+        nex = kpath.edges[i+1]
+        
+        availableLines = lineDic[cur.fromNode].intersection(graph.nodes[cur.toNode].neighborsAvailableLines[nex.toNode])
+        
+        if len(availableLines) > 0:
+            lineDic[cur.toNode] = availableLines
+        else:
+            numTransfer += 1
+            lineDic[cur.toNode] = graph.nodes[cur.toNode].neighborsAvailableLines[nex.toNode]
+            if numTransfer > 4:
+                isAvailable = False
+                break
+    
+    return isAvailable, numTransfer, lineDic
+        # if len(lineListAvailable) == 0:
+        #     newDistance += 3
+        #     lineListAvailable = lineListCurNeighbor
+        #     if ksp.edges[i].fromNode in sb:
+        #         return False
+        #     else:
+        #         sb.append(ksp.edges[i].fromNode)
+    
+
 def ksp(graph, sourceLabel, targetLabel, K):
     tree = shortestPathTree(graph.transpose(), targetLabel)
     sidetrackEdgeCostMap = computeSidetrackEdgeCosts(graph, tree)
@@ -19,11 +68,14 @@ def ksp(graph, sourceLabel, targetLabel, K):
     
     #  Initialize the containers for the candidate k shortest paths and the actual found k shortest paths
     ksp = []
+    result = []
     #Heap
     pathPQ = []
     heappush(pathPQ, EppsteinPath(heap=hg, prefPath=-1, cost=tree.nodes[sourceLabel].dist))
     
-    for i in range(0,K):
+    i = 0
+    # for i in range(0,K):
+    while True:
         if len(pathPQ) < 1:
             break
             #  Get the next shortest path, which is implicitly represented as:
@@ -38,8 +90,9 @@ def ksp(graph, sourceLabel, targetLabel, K):
         kpath = kpathImplicit.explicitPath(graph, ksp, tree);
 
         #  Add explicit path to the list of K shortest paths
-        ksp.append(kpath);
-
+        
+        ksp.append(kpath)
+        
         #  Push the (up to 3) children of this path within the Eppstein heap onto the priority queue
         addExplicitChildrenToQueue(kpathImplicit, ksp, pathPQ)
         
@@ -52,9 +105,21 @@ def ksp(graph, sourceLabel, targetLabel, K):
         if kpathImplicit.heap.sidetrack.toNode not in outrootHeaps.keys():
             buildHeap(kpathImplicit.heap.sidetrack.toNode, graph, sidetrackEdgeCostMap, nodeHeaps, edgeHeaps, outrootHeaps, arrayHeaps, tree)
         addCrossEdgeChildToQueue(outrootHeaps, kpathImplicit, i, ksp, pathPQ);
+        
+        if checkLoop(kpath):
+            isAvailable, numTransfer, lineDic = checkLineTransfer(graph,tree,kpath)
+            if isAvailable:
+                i+=1
+                kpath.totalCost += 3*numTransfer
+                kpath.numTransfer = numTransfer
+                kpath.lineDic = lineDic
+                heappush(result,kpath)
+        
+        if i == K: 
+            break
 
         # // Return the set of k shortest paths
-    return ksp;
+    return result;
 
 def buildHeap(nodeLabel, graph, sidetrackEdgeCostMap, nodeHeaps, edgeHeaps, outrootHeaps, arrayHeaps, tree):
     computeOutHeap(nodeLabel, graph, sidetrackEdgeCostMap, nodeHeaps, edgeHeaps)
@@ -85,7 +150,7 @@ def buildHeap(nodeLabel, graph, sidetrackEdgeCostMap, nodeHeaps, edgeHeaps, outr
 def testSimpleData():
     graph = Graph()
     
-    K = 2
+    K = 10
     graph.getDataFromFile('tiny_graph_01.1.txt')
     print("Reading data from file is complete")
     print("Computing %d shortest paths from data")
@@ -105,7 +170,7 @@ def testBusData():
     
     sourceNode = "105013";
     targetNode = "106410";
-    K = 2;
+    K = 20;
     
     graph.getDataFromBusFile('bus.csv')
     
@@ -119,7 +184,8 @@ def testBusData():
     stop = timeit.default_timer()
     
     n = 1
-    for p in kspList:
+    while len(kspList)>0:
+        p = heappop(kspList)
         print("%d) %s" % (n,p))
         n+=1
         

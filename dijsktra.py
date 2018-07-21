@@ -61,13 +61,12 @@ class Path:
                 for e in edges:
                     totalCost += e.weight
                 self.totalCost = totalCost
-            elif key == 'lines':
-                self.linesArr = value
         
         else:
             self.edges = []
             self.totalCost = 0
-            self.linesArr = []
+            self.lineDic = {}
+            self.numTransfer = 0
             
     
     def getPathNodes(self):
@@ -94,6 +93,12 @@ class Path:
     def add(self,edge):
         self.edges.append(edge)
         self.totalCost += edge.weight
+        
+    def __lt__(self,other):
+        return self.totalCost < other.totalCost
+    
+    def __gt__(self,other):
+        return other.__lt__(self)
     
     def addLastNode(self,nodeLabel):
         lastNode = self.edges[len(self.edges)-1].toNode
@@ -106,18 +111,27 @@ class Path:
     def __str__(self):
         sb = []
         numEdges = len(self.edges)
+        sb.append("totalCost : ")
         sb.append(str(self.totalCost))
+        sb.append(", numTransfer : ")
+        sb.append(str(self.numTransfer))
         sb.append(": [")
         if numEdges > 0:
             for i in range(numEdges):
                 sb.append(self.edges[i].fromNode)
                 sb.append("{")
-                for al in self.edges[i].availableLines:
-                    sb.append(al)
+                for line in self.lineDic[self.edges[i].fromNode]:
+                    sb.append(line)
+                    sb.append(",")
                 sb.append("}")
                 sb.append("-")
         
             sb.append(self.edges[numEdges-1].toNode)
+            # sb.append("{")
+            # for line in self.lineDic[self.edges[numEdges-1].toNode]:
+            #     sb.append(line)
+            #     sb.append(",")
+            # sb.append("}")
         
         sb.append("]")
         
@@ -165,7 +179,7 @@ def shortestPathTree(graph, sourceLabel):
     sourceNode = predecessorTree.nodes[predecessorTree.root]
     sourceNode.dist = 0
     sourceNode.depth = 0
-    sourceNode.lines = graph.nodes[predecessorTree.root].getAvailableLineSet()
+    # sourceNode.lines = graph.nodes[predecessorTree.root].getAvailableLineSet()
     heappush(pq, sourceNode)
 
     count = 0
@@ -182,15 +196,6 @@ def shortestPathTree(graph, sourceLabel):
             curDistance = neighborNode.dist
             newDistance = current.dist + nodes[curLabel].neighbors[curNeighborLabel]
             # check Line
-           
-            # print("curLabel : " + curLabel)
-            # print(graph.nodes[curLabel].getAdjacencyList())
-            # print(graph.nodes[curLabel].neighborsAvailableLines)
-            lineListCurNeighbor = graph.nodes[curLabel].neighborsAvailableLines[curNeighborLabel]
-            lineListAvailable = predecessorTree.nodes[curLabel].lines.intersection(lineListCurNeighbor)
-            if len(lineListAvailable) == 0:
-                newDistance += 3
-                lineListAvailable = lineListCurNeighbor
             
             #print("curDis : %f, newDis : %f" % (curDistance, newDistance))
             if newDistance < curDistance:
@@ -200,7 +205,7 @@ def shortestPathTree(graph, sourceLabel):
                 neighbor.depth = current.depth + 1
                 neighbor.dist = newDistance
                 neighbor.setParent(curLabel)
-                neighbor.lines = lineListAvailable
+                # neighbor.lines = lineListAvailable
                 pq.append(neighbor)
                 heapify(pq)
                 
